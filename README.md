@@ -11,11 +11,36 @@ Built with **Go**, server-side-rendered entry pages, and a single authoritative
 
 ## Run
 
+The full stack (Go server behind nginx) on plain **http://localhost** via Docker:
+
+```bash
+make server      # docker compose up --build  → http://localhost
+make down        # stop the stack
+```
+
+Or run the Go server directly for local development (no Docker):
+
 ```bash
 go run ./cmd/server      # serves http://localhost:8080
 ```
 
-Open <http://localhost:8080>, pick a **room name** and your **country name**, and
+### Make targets
+
+| Command | What it does |
+| --- | --- |
+| `make server` | Build & run the stack (Go app + nginx) → **http://localhost** |
+| `make down` | Stop the stack and remove its containers |
+| `make build` | Compile a binary to `bin/server` |
+| `make test` | Run the test suite |
+| `make fmt` | Format Go sources |
+| `make vet` | Static checks |
+
+`make server` uses Docker Compose (`docker-compose.yml` + `nginx.conf`); the
+other targets use your local Go toolchain. Publishing port 80 goes through the
+Docker daemon, so you need permission to run `docker` (be in the `docker` group
+or use `sudo`).
+
+Open <http://localhost> (or <http://localhost:8080> for the direct run), pick a **room name** and your **country name**, and
 share the room name with friends — there is no public list and no password, so a
 name you don't share is effectively private. Your currency is named after your
 country (e.g. country "Veska" → "Veska currency").
