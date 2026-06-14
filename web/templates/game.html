@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{.Country}} · {{.Room}}</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+  <script>
+    window.GAME = {
+      room: {{.Room}},
+      country: {{.Country}},
+      currency: {{.Currency}},
+      token: {{.Token}},
+      mode: {{.Mode}},
+    };
+  </script>
+</head>
+<body class="game" data-mode="map">
+  <div class="aurora"></div>
+
+  <header class="topbar glass">
+    <div class="brand">DIRTY<span class="accent">·</span>WORLD</div>
+    <div class="room-tag">room <strong>{{.Room}}</strong></div>
+    <div class="stat" id="stat-cash"><label>Treasury</label><span>—</span></div>
+    <div class="stat" id="stat-capital"><label>Capital</label><span>—</span></div>
+    <div class="stat" id="stat-nukes"><label>Nukes</label><span>—</span></div>
+    <div class="stat" id="stat-rate"><label>FX rate</label><span>—</span></div>
+    <a class="btn small console-link" target="_blank"
+       href="/play/{{.Room}}/console?country={{.Country | urlquery}}&token={{.Token | urlquery}}">Open console ↗</a>
+    <div class="stat" id="stat-status"><label>Status</label><span id="conn">connecting…</span></div>
+  </header>
+
+  <main class="layout map-only">
+    <section class="map-wrap glass">
+      <div class="map-header">
+        <h2 id="map-title">Your country</h2>
+        <div class="map-tabs" id="map-tabs"></div>
+      </div>
+      <svg id="map" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="map-hint" id="map-hint">Drag your buildings to reposition. Click a rival tab to scout, or a rival building to target it. Open the console for markets &amp; operations.</div>
+      <div class="stock map-stock" id="stock"></div>
+    </section>
+  </main>
+
+  {{template "shared" .}}
+
+  <script type="module" src="/static/js/client.js"></script>
+</body>
+</html>
+
+{{define "shared"}}
+  <!-- News FAB + panel -->
+  <button id="news-btn" class="news-fab" aria-label="News feed">
+    <svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M4 4h13a1 1 0 0 1 1 1v13a2 2 0 0 0 2-2V8h2v8a4 4 0 0 1-4 4H6a3 3 0 0 1-3-3V4Zm2 3v2h9V7H6Zm0 4v2h9v-2H6Zm0 4v2h6v-2H6Z"/></svg>
+    <span id="news-badge" class="badge" hidden>0</span>
+  </button>
+  <aside id="news-panel" class="glass">
+    <div class="news-head">
+      <h3>The Wire</h3>
+      <button class="btn small" id="news-compose">Publish</button>
+      <button class="btn small ghost" id="news-close">✕</button>
+    </div>
+    <ul id="news-list"></ul>
+  </aside>
+
+  <div id="toasts"></div>
+  <div id="tell-flare"></div>
+
+  <div id="win-overlay" class="overlay" hidden>
+    <div class="win-card glass">
+      <h1 id="win-title"></h1>
+      <div id="win-reveals"></div>
+      <a href="/" id="win-back" class="btn primary">Back to lobby</a>
+    </div>
+  </div>
+
+  <div id="lobby" class="overlay" hidden>
+    <div class="lobby-card glass">
+      <h1>Waiting room</h1>
+      <p class="muted">Room <strong>{{.Room}}</strong> — share this name so friends can join.</p>
+      <ul id="lobby-list" class="lobby-list"></ul>
+      <div id="lobby-host" hidden>
+        <button class="btn primary" id="lobby-start">Start game</button>
+        <p class="muted small">You're the host. Start once everyone has joined.</p>
+      </div>
+      <p id="lobby-wait" class="muted" hidden>Waiting for the host to start the game…</p>
+    </div>
+  </div>
+
+  <div id="modal" class="overlay" hidden>
+    <div class="modal-card glass">
+      <h3 id="modal-title"></h3>
+      <div id="modal-body"></div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="modal-cancel">Cancel</button>
+        <button class="btn primary" id="modal-ok">Confirm</button>
+      </div>
+    </div>
+  </div>
+{{end}}

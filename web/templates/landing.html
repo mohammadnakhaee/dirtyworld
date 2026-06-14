@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dirty World · Economic Strategy</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body class="landing">
+  <div class="aurora"></div>
+  <main class="landing-card glass">
+    <h1 class="title">DIRTY<span class="accent">·</span>WORLD</h1>
+    <p class="subtitle">A silent race of currencies, commodities and quiet sabotage.
+       Pick a name only your friends know — no list, no password.</p>
+
+    {{if .Error}}<div class="error-banner">{{.Error}}</div>{{end}}
+
+    <div class="forms">
+      <form class="panel" action="/create" method="post">
+        <h2>Create a world</h2>
+        <label>Room name<input name="room" value="{{.Room}}" placeholder="atlas" required pattern="[A-Za-z0-9_-]{1,40}" /></label>
+        <label>Your country<input name="country" placeholder="Veska" required /></label>
+
+        <fieldset class="settings">
+          <legend>Game settings</legend>
+          <label>Starting treasury<input name="treasury" type="number" min="1" step="1" value="3000" /></label>
+          <label>Nukes to win<input name="nukeWin" type="number" min="1" step="1" value="5" /></label>
+          <label>Capital to win<input name="capitalTarget" type="number" min="1" step="1" value="10000" /></label>
+        </fieldset>
+
+        <p class="muted small">Your currency will be “Veska currency”. You'll host the lobby.</p>
+        <button type="submit" class="btn primary">Create &amp; host</button>
+      </form>
+
+      <div class="divider"><span>or</span></div>
+
+      <form class="panel" action="/join" method="post">
+        <h2>Join a world</h2>
+        <label>Room name<input name="room" placeholder="atlas" required pattern="[A-Za-z0-9_-]{1,40}" /></label>
+        <label>Your country<input name="country" placeholder="Tyros" required /></label>
+        <p class="muted small">Use the same country name to rejoin a game you dropped from.</p>
+        <button type="submit" class="btn">Join</button>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

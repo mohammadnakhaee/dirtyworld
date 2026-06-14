@@ -1,0 +1,9 @@
+# build output
+/bin/
+
+# go
+*.test
+*.out
+
+# stray compiled binary at repo root
+/server
