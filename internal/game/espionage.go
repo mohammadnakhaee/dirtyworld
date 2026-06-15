@@ -6,6 +6,9 @@ func (r *Room) buySpy(buyer *Player, targetID string) error {
 	if targetID == buyer.ID {
 		return errStr("cannot spy on yourself")
 	}
+	if r.tierOf(buyer) < TierSecond {
+		return errStr("your nation must be at least Second World to run espionage")
+	}
 	target, ok := r.Players[targetID]
 	if !ok {
 		return errStr("target player not found")

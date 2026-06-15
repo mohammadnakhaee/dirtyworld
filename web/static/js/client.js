@@ -85,6 +85,7 @@ function applyState(s) {
   renderStock(s.self.resources, s.catalog);
   renderGoals(s.self, s.catalog);
   renderServiceCosts(s);
+  renderTierGates(s);
   renderTabs(s);
   scheduleMapRender();
 }
@@ -243,7 +244,7 @@ function renderBoard(board) {
     li.innerHTML = `
       <span class="rank">${i + 1}</span>
       <span class="dot" style="background:${e.palette}"></span>
-      <span class="bname">${esc(e.name)}</span>
+      <span class="bname">${esc(e.name)} <span class="world world-${tierClass(e.world)}">${esc(e.world)}</span></span>
       <span class="bcur">${esc(e.currency)}</span>
       <span class="brate">${e.exchangeRate.toFixed(3)}</span>`;
     ul.appendChild(li);
@@ -358,6 +359,9 @@ function setConn(text, ok) {
   e.textContent = text; e.className = ok ? "ok" : "bad";
 }
 function fmt(n) { return Math.round(n).toLocaleString(); }
+function tierClass(world) {
+  return world === "First World" ? "first" : world === "Second World" ? "second" : "third";
+}
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -417,7 +421,32 @@ function wireOps() {
     });
   });
 
+  on("op-satellite", openSatellite);
   on("lobby-start", () => send("game.start", {}));
+}
+
+// openSatellite confirms launching a First-World satellite (reveals all maps).
+function openSatellite() {
+  modal(`Launch a satellite (${svcCost("satellite")} ${G.currency})`, `
+    <p>A spy satellite permanently reveals <b>every rival's map</b> — and lets you target them — without paying for espionage each time.</p>
+    <p class="muted small">First-World tech. ${app.state.catalog.services.satellite} general units → ${svcCost("satellite")} ${G.currency}.</p>`,
+    () => send("satellite.build", {}));
+}
+
+// renderTierGates disables tech the nation hasn't developed to yet.
+function renderTierGates(s) {
+  const tier = s.self.tier || 0;
+  gate("op-spy", tier < 1, "Reach Second World to run espionage");
+  gate("op-nuke", tier < 2, "Reach First World to assemble nukes");
+  gate("op-satellite", tier < 2 || s.self.hasSatellite,
+    s.self.hasSatellite ? "Satellite already in orbit" : "Reach First World to launch a satellite");
+}
+
+function gate(id, locked, why) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.disabled = !!locked;
+  el.title = locked ? why : "";
 }
 
 // openFactoryMenu lists every factory with its recipe, payout and whether the
@@ -425,21 +454,27 @@ function wireOps() {
 function openFactoryMenu() {
   const cat = app.state.catalog;
   const res = app.state.self.resources || {};
+  const tier = app.state.self.tier || 0;
   const iconOf = (name) => (cat.resources.find((r) => r.name === name) || {}).icon || "";
   const rows = cat.factories.map((f) => {
+    const tierOK = tier >= f.minTier;
     const recipe = Object.entries(f.recipe)
       .map(([r, n]) => `${n}×${iconOf(r)}${r}`).join(" + ");
-    const ok = Object.entries(f.recipe).every(([r, n]) => (res[r] || 0) >= n);
+    const resOK = Object.entries(f.recipe).every(([r, n]) => (res[r] || 0) >= n);
+    const ok = tierOK && resOK;
+    const note = tierOK
+      ? `${recipe} · earns ~${Math.round(f.payout)}/cycle`
+      : `🔒 needs ${esc(f.minWorld)}`;
     return `<div class="fac-row ${ok ? "" : "short"}">
       <div class="fac-info">
         <span class="fac-ttl">${f.icon} ${esc(f.title)}</span>
-        <span class="muted small">${recipe} · earns ~${Math.round(f.payout)}/cycle</span>
+        <span class="muted small">${note}</span>
       </div>
       <button class="btn small ${ok ? "primary" : ""}" data-fac="${f.key}" ${ok ? "" : "disabled"}>Build</button>
     </div>`;
   }).join("");
   modal("Build a factory", `<div class="fac-list">${rows}</div>
-    <p class="muted small">Buy the resources first — the recipe is consumed when you build.</p>`,
+    <p class="muted small">Advanced factories unlock as your nation develops (Second / First World). Buy the resources first — the recipe is consumed when you build.</p>`,
     () => false);
   document.querySelectorAll("#modal [data-fac]").forEach((b) => {
     b.onclick = () => {

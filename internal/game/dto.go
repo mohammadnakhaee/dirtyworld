@@ -49,21 +49,25 @@ type BoardEntry struct {
 	Currency     string  `json:"currency"`
 	Palette      string  `json:"palette"`
 	ExchangeRate float64 `json:"exchangeRate"`
+	World        string  `json:"world"` // "Third World" / "Second World" / "First World"
 	Self         bool    `json:"self"`
 	Host         bool    `json:"host"`
 	Connected    bool    `json:"connected"`
 }
 
 type SelfDTO struct {
-	PlayerID   string         `json:"playerId"`
-	Name       string         `json:"name"`
-	Cash       float64        `json:"cash"`
-	Confidence float64        `json:"confidence"`
-	Capital    float64        `json:"capital"`
-	Resources  map[string]int `json:"resources"`
-	Nukes      int            `json:"nukes"`
-	CanPost    bool           `json:"canPost"`
-	IsHost     bool           `json:"isHost"`
+	PlayerID     string         `json:"playerId"`
+	Name         string         `json:"name"`
+	Cash         float64        `json:"cash"`
+	Confidence   float64        `json:"confidence"`
+	Capital      float64        `json:"capital"`
+	Resources    map[string]int `json:"resources"`
+	Nukes        int            `json:"nukes"`
+	CanPost      bool           `json:"canPost"`
+	IsHost       bool           `json:"isHost"`
+	Tier         int            `json:"tier"`  // 0 third, 1 second, 2 first world
+	World        string         `json:"world"` // tier name
+	HasSatellite bool           `json:"hasSatellite"`
 }
 
 // ---- static catalog (win rules, factory recipes, resource list) ----
@@ -81,6 +85,8 @@ type FactoryDTO struct {
 	Recipe     map[string]int `json:"recipe"`
 	BuildValue float64        `json:"buildValue"`
 	Payout     float64        `json:"payout"`
+	MinTier    int            `json:"minTier"`
+	MinWorld   string         `json:"minWorld"`
 }
 
 type CatalogDTO struct {
@@ -103,10 +109,11 @@ func buildCatalog() CatalogDTO {
 		NukeTarget:    NukeWinCount,
 		CapitalTarget: CapitalWinTarget,
 		Services: map[string]float64{
-			"military": CostMilitary,
-			"agency":   CostAgency,
-			"spy":      SpyCost,
-			"hack":     HackCost,
+			"military":  CostMilitary,
+			"agency":    CostAgency,
+			"spy":       SpyCost,
+			"hack":      HackCost,
+			"satellite": SatelliteCost,
 		},
 	}
 	for _, d := range resourceDefs {
@@ -116,6 +123,7 @@ func buildCatalog() CatalogDTO {
 		c.Factories = append(c.Factories, FactoryDTO{
 			Key: f.Key, Title: f.Title, Icon: f.Icon, Recipe: f.Recipe,
 			BuildValue: round(f.buildValue(), 1), Payout: round(f.payout(), 1),
+			MinTier: f.MinTier, MinWorld: worldName(f.MinTier),
 		})
 	}
 	return c

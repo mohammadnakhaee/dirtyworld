@@ -38,9 +38,9 @@ func (r *Room) doAttack(attacker *Player, targetPlayerID, targetPlaceableID stri
 	if targetPlayerID == attacker.ID {
 		return nil, errStr("cannot attack yourself")
 	}
-	// You can only strike a country you currently have eyes on.
-	if !r.spyActive(attacker.ID, targetPlayerID) {
-		return nil, errStr("you can only attack a country you're actively spying — buy espionage first")
+	// You can only strike a country you currently have eyes on (spy or satellite).
+	if !r.canSee(attacker.ID, targetPlayerID) {
+		return nil, errStr("you can only attack a country you can see — spy on it or launch a satellite")
 	}
 	// Attacker must own a working military building to project force.
 	if !attacker.hasReadyMilitary() {

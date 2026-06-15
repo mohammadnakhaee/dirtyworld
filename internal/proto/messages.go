@@ -12,18 +12,19 @@ type Envelope struct {
 
 // ---- Client -> Server commands ----
 const (
-	CmdPlaceableMove = "placeable.move" // drag an icon to a new spot
-	CmdMarketOrder   = "market.order"   // buy/sell a resource
-	CmdBuyService    = "service.buy"    // build military / news agency (cash)
-	CmdBuildFactory  = "factory.build"  // build a factory (consumes resources)
-	CmdBuildNuke     = "nuke.build"     // assemble a nuclear weapon
-	CmdRepair        = "repair"         // pay to repair a damaged placeable
-	CmdAttack        = "attack"         // strike a target placeable
-	CmdSpy           = "spy"            // pay to reveal a rival's map
-	CmdPublishNews   = "news.publish"   // post to your own agency (free)
-	CmdHackNews      = "news.hack"      // plant fake news on a rival
-	CmdStartGame     = "game.start"     // host starts the match from the lobby
-	CmdCloseRoom     = "room.close"     // host tears the whole room down
+	CmdPlaceableMove  = "placeable.move"  // drag an icon to a new spot
+	CmdMarketOrder    = "market.order"    // buy/sell a resource
+	CmdBuyService     = "service.buy"     // build military / news agency (cash)
+	CmdBuildFactory   = "factory.build"   // build a factory (consumes resources)
+	CmdBuildNuke      = "nuke.build"      // assemble a nuclear weapon
+	CmdRepair         = "repair"          // pay to repair a damaged placeable
+	CmdAttack         = "attack"          // strike a target placeable
+	CmdSpy            = "spy"             // pay to reveal a rival's map
+	CmdPublishNews    = "news.publish"    // post to your own agency (free)
+	CmdHackNews       = "news.hack"       // plant fake news on a rival
+	CmdStartGame      = "game.start"      // host starts the match from the lobby
+	CmdCloseRoom      = "room.close"      // host tears the whole room down
+	CmdBuildSatellite = "satellite.build" // First-World satellite: reveal all maps
 )
 
 type PlaceableMove struct {

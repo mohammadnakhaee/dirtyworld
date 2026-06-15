@@ -64,8 +64,9 @@ type Room struct {
 	HostID   string // the player who controls the lobby start
 	WinnerID string
 
-	byConn map[Conn]*Player
-	over   bool
+	byConn     map[Conn]*Player
+	over       bool
+	activeTick int // last tick anyone was connected (seeded at creation)
 
 	// OnEmpty is invoked (from the room goroutine) when the last player leaves,
 	// letting the hub drop the room from its registry.
@@ -82,17 +83,18 @@ type Room struct {
 // map tab and a console tab — all belonging to the same browser session, keyed
 // by Token. A different session reusing the country name is rejected.
 type Player struct {
-	ID          string
-	Name        string
-	Token       string // session token shared by this player's views
-	conns       map[Conn]bool
-	Country     *Country
-	Cash        float64
-	Resources   map[string]int // integer stockpile of each resource
-	Confidence  float64        // C_i, ~0.6..1.4, decays toward 1.0
-	PrevCapital float64        // for momentum M_i
-	SpyAccess   map[string]int // targetID -> tick the access expires
-	dcTick      int            // tick when the last connection dropped (while offline)
+	ID           string
+	Name         string
+	Token        string // session token shared by this player's views
+	conns        map[Conn]bool
+	Country      *Country
+	Cash         float64
+	Resources    map[string]int // integer stockpile of each resource
+	Confidence   float64        // C_i, ~0.6..1.4, decays toward 1.0
+	PrevCapital  float64        // for momentum M_i
+	SpyAccess    map[string]int // targetID -> tick the access expires
+	hasSatellite bool           // First-World satellite: sees every rival's map
+	dcTick       int            // tick when the last connection dropped (while offline)
 }
 
 // nukeCount is the number of surviving nuclear weapons. Each nuke is a placeable

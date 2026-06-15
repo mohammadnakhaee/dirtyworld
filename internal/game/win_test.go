@@ -80,11 +80,38 @@ func TestDestroyedNukeNotCounted(t *testing.T) {
 	}
 }
 
+func TestWorldTier(t *testing.T) {
+	const target = 9000
+	cases := []struct {
+		cap  float64
+		want int
+	}{
+		{0, TierThird}, {2999, TierThird},
+		{3000, TierSecond}, {5999, TierSecond},
+		{6000, TierFirst}, {12000, TierFirst},
+	}
+	for _, c := range cases {
+		if got := worldTier(c.cap, target); got != c.want {
+			t.Fatalf("worldTier(%.0f, %d) = %d, want %d", c.cap, target, got, c.want)
+		}
+	}
+}
+
 func TestStartingCapitalExcludesBuildings(t *testing.T) {
 	r := NewRoom("t", Config{})
 	p := newTestPlayer(r, "Veska")
 	// Fresh player: only starting cash, no resources, no factories.
 	if got := p.capital(r.Market); got != StartingCash {
 		t.Fatalf("starting capital = %.0f, want %.0f (agency/military must not count)", got, StartingCash)
+	}
+}
+
+func TestSatelliteNoHang(t *testing.T) {
+	r := NewRoom("t", Config{CapitalTarget: 300})
+	p := newTestPlayer(r, "Aaa")
+	p.Cash = 5000 // capital 5000 >> 2/3*300 -> First World
+	r.buildSatellite(p)
+	if !p.hasSatellite {
+		t.Fatal("satellite not set")
 	}
 }

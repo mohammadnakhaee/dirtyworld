@@ -13,33 +13,75 @@ const (
 	NukeCash    = 1_500.0
 	NukeValue   = 2_000.0 // for combat cash-damage scaling
 
+	// A First-World satellite reveals every rival's map (general-unit price).
+	SatelliteCost = 2_500.0
+
 	// Each production cycle a factory pays out this fraction of its build value.
 	factoryPayoutRate = 0.3
 )
+
+// World development tiers, by capital relative to the capital-to-win target:
+//
+//	third  (0): < 1/3      second (1): 1/3..2/3      first (2): > 2/3
+const (
+	TierThird  = 0
+	TierSecond = 1
+	TierFirst  = 2
+)
+
+func worldTier(capital, target float64) int {
+	if target <= 0 {
+		return TierThird
+	}
+	switch {
+	case capital >= target*2.0/3.0:
+		return TierFirst
+	case capital >= target/3.0:
+		return TierSecond
+	default:
+		return TierThird
+	}
+}
+
+func worldName(tier int) string {
+	switch tier {
+	case TierFirst:
+		return "First World"
+	case TierSecond:
+		return "Second World"
+	default:
+		return "Third World"
+	}
+}
 
 // FactoryDef is a buildable factory: its resource recipe (consumed on build),
 // production cadence, and presentation. Build value and payout are derived from
 // the recipe — pricier recipes earn more.
 type FactoryDef struct {
-	Key    string
-	Title  string
-	Icon   string
-	Recipe map[string]int
-	Cycle  int // ticks between payouts
+	Key     string
+	Title   string
+	Icon    string
+	Recipe  map[string]int
+	Cycle   int // ticks between payouts
+	MinTier int // lowest world tier allowed to build it
 }
 
 // Cycle is in ticks (500ms each), so these are roughly 10–16s between payouts.
+// MinTier gates advanced industry behind economic development.
 var factoryDefs = []FactoryDef{
-	{"jewelry", "Jewelry", "💎", map[string]int{"oil": 1, "gold": 2, "iron": 1}, 28},
-	{"beer", "Brewery", "🍺", map[string]int{"oil": 1, "grain": 2, "water": 1}, 24},
-	{"car", "Car Plant", "🚗", map[string]int{"oil": 2, "iron": 1, "glass": 1, "plastic": 1}, 32},
-	{"food", "Food Plant", "🍔", map[string]int{"oil": 1, "grain": 1, "water": 2}, 24},
-	{"refinery", "Refinery", "🏭", map[string]int{"oil": 1, "plastic": 2}, 28},
-	{"steel", "Steel Mill", "🔩", map[string]int{"oil": 1, "iron": 2, "coal": 1}, 30},
-	{"sawmill", "Sawmill", "🪚", map[string]int{"oil": 1, "wood": 1}, 20},
-	{"glassworks", "Glassworks", "🏗️", map[string]int{"oil": 1, "coal": 1, "glass": 1}, 28},
-	{"textile", "Textile Mill", "🧵", map[string]int{"oil": 1, "cotton": 1, "water": 1}, 24},
-	{"nuclear", "Nuclear Plant", "⚛️", map[string]int{"oil": 1, "uranium": 1, "water": 1}, 30},
+	// Third-World tech (everyone)
+	{"food", "Food Plant", "🍔", map[string]int{"oil": 1, "grain": 1, "water": 2}, 24, TierThird},
+	{"sawmill", "Sawmill", "🪚", map[string]int{"oil": 1, "wood": 1}, 20, TierThird},
+	{"beer", "Brewery", "🍺", map[string]int{"oil": 1, "grain": 2, "water": 1}, 24, TierThird},
+	{"textile", "Textile Mill", "🧵", map[string]int{"oil": 1, "cotton": 1, "water": 1}, 24, TierThird},
+	// Second-World tech
+	{"refinery", "Refinery", "🏭", map[string]int{"oil": 1, "plastic": 2}, 28, TierSecond},
+	{"glassworks", "Glassworks", "🏗️", map[string]int{"oil": 1, "coal": 1, "glass": 1}, 28, TierSecond},
+	{"steel", "Steel Mill", "🔩", map[string]int{"oil": 1, "iron": 2, "coal": 1}, 30, TierSecond},
+	// First-World tech
+	{"car", "Car Plant", "🚗", map[string]int{"oil": 2, "iron": 1, "glass": 1, "plastic": 1}, 32, TierFirst},
+	{"jewelry", "Jewelry", "💎", map[string]int{"oil": 1, "gold": 2, "iron": 1}, 28, TierFirst},
+	{"nuclear", "Nuclear Plant", "⚛️", map[string]int{"oil": 1, "uranium": 1, "water": 1}, 30, TierFirst},
 }
 
 func factoryByKey(key string) (FactoryDef, bool) {
@@ -70,6 +112,10 @@ func (r *Room) buildFactory(p *Player, key string) {
 		r.errTo(p, errStr("unknown factory type"))
 		return
 	}
+	if r.tierOf(p) < def.MinTier {
+		r.errTo(p, errStr("your nation must be "+worldName(def.MinTier)+" to build a "+def.Title))
+		return
+	}
 	var missing []string
 	for res, n := range def.Recipe {
 		if p.Resources[res] < n {
@@ -98,6 +144,10 @@ func (r *Room) buildFactory(p *Player, key string) {
 
 // buildNuke assembles a nuclear weapon from oil + uranium + cash.
 func (r *Room) buildNuke(p *Player) {
+	if r.tierOf(p) < TierFirst {
+		r.errTo(p, errStr("only a First-World nation can assemble nuclear weapons"))
+		return
+	}
 	if p.Resources["oil"] < NukeOil || p.Resources["uranium"] < NukeUranium {
 		r.errTo(p, errStr("a nuke needs "+itoa(NukeOil)+" oil and "+itoa(NukeUranium)+" uranium"))
 		return
@@ -121,4 +171,26 @@ func (r *Room) buildNuke(p *Player) {
 	}
 	r.notice(p, "assembled a nuclear weapon ("+itoa(p.nukeCount())+"/"+itoa(r.Cfg.NukeWin)+")")
 	r.sendState(p, "map.update")
+}
+
+// buildSatellite launches a First-World satellite that permanently reveals every
+// rival's map (and lets you target them).
+func (r *Room) buildSatellite(p *Player) {
+	if r.tierOf(p) < TierFirst {
+		r.errTo(p, errStr("only a First-World nation can launch a satellite"))
+		return
+	}
+	if p.hasSatellite {
+		r.errTo(p, errStr("you already have a satellite in orbit"))
+		return
+	}
+	cost := p.convertCost(SatelliteCost)
+	if p.Cash < cost {
+		r.errTo(p, errStr("a satellite needs "+fmtMoney(cost)+" "+p.Country.Currency))
+		return
+	}
+	p.Cash -= cost
+	p.hasSatellite = true
+	r.notice(p, "satellite launched — every rival's map is now visible")
+	r.sendState(p, "tick")
 }

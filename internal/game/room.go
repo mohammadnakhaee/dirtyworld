@@ -88,23 +88,18 @@ func (r *Room) gc() bool {
 		}
 		r.dropPlayer(p)
 	}
-	if r.connectedCount() == 0 && r.graceElapsed() {
+	// Tear down only once nobody has been connected for a grace window. activeTick
+	// is seeded at creation, so a just-created room isn't killed before its host
+	// has had time to connect.
+	if r.connectedCount() > 0 {
+		r.activeTick = r.Tick
+		return false
+	}
+	if r.Tick-r.activeTick >= GraceTicks {
 		r.shutdown()
 		return true
 	}
 	return false
-}
-
-// graceElapsed reports whether enough time has passed since the most recent
-// disconnect to safely tear the room down.
-func (r *Room) graceElapsed() bool {
-	newest := -1 << 30
-	for _, p := range r.Players {
-		if p.dcTick > newest {
-			newest = p.dcTick
-		}
-	}
-	return len(r.Players) == 0 || r.Tick-newest >= GraceTicks
 }
 
 // dropPlayer removes a player from the lobby and reassigns the host if needed.
@@ -262,6 +257,21 @@ func (r *Room) playerByCountry(name string) *Player {
 	return nil
 }
 
+// tierOf is a player's current world tier (by capital vs the win target).
+func (r *Room) tierOf(p *Player) int {
+	return worldTier(p.capital(r.Market), r.Cfg.CapitalTarget)
+}
+
+// canSee reports whether viewer can see (and therefore attack) target — via
+// active espionage on them, or a satellite that reveals everyone.
+func (r *Room) canSee(viewerID, targetID string) bool {
+	v := r.Players[viewerID]
+	if v != nil && v.hasSatellite {
+		return true
+	}
+	return r.spyActive(viewerID, targetID)
+}
+
 // ---- command dispatch ----
 
 func (r *Room) handleCommand(cmd Command) {
@@ -313,6 +323,8 @@ func (r *Room) handleCommand(cmd Command) {
 		}
 	case proto.CmdBuildNuke:
 		r.buildNuke(p)
+	case proto.CmdBuildSatellite:
+		r.buildSatellite(p)
 	case proto.CmdRepair:
 		var m proto.Repair
 		if json.Unmarshal(cmd.Raw, &m) == nil {
@@ -499,14 +511,15 @@ func (r *Room) buildStateFor(p *Player) StateMsg {
 		if other == nil || other.ID == p.ID {
 			continue
 		}
-		spied := r.spyActive(p.ID, other.ID)
+		spied := r.canSee(p.ID, other.ID)
 		rd := RivalDTO{Spied: spied}
 		rd.PlayerID = other.ID
 		rd.Name = other.Country.Name
 		rd.Currency = other.Country.Currency
 		rd.Palette = other.Country.Palette
 		rd.ExchangeRate = other.Country.exchangeRate
-		// A rival's map (and stockpile) is only visible while you spy them.
+		// A rival's map (and stockpile) is only visible while you spy them
+		// (or have a satellite).
 		if spied {
 			rd.Boundary = other.Country.Boundary
 			for _, pl := range other.Country.Placeables {
@@ -542,17 +555,20 @@ func (r *Room) buildStateFor(p *Player) StateMsg {
 		board = append(board, BoardEntry{
 			PlayerID: o.ID, Name: o.Country.Name, Currency: o.Country.Currency,
 			Palette: o.Country.Palette, ExchangeRate: round(o.Country.exchangeRate, 0.001),
-			Self: o.ID == p.ID, Host: o.ID == r.HostID, Connected: o.connected(),
+			World: worldName(r.tierOf(o)),
+			Self:  o.ID == p.ID, Host: o.ID == r.HostID, Connected: o.connected(),
 		})
 	}
 	sort.Slice(board, func(i, j int) bool { return board[i].ExchangeRate > board[j].ExchangeRate })
 
 	_, canPost := p.canPost()
+	tier := r.tierOf(p)
 	self := SelfDTO{
 		PlayerID: p.ID, Name: p.Name, Cash: round(p.Cash, 0.01),
 		Confidence: round(p.Confidence, 0.001), Capital: round(p.capital(r.Market), 0.01),
 		Resources: cloneResources(p.Resources), Nukes: p.nukeCount(),
 		CanPost: canPost, IsHost: p.ID == r.HostID,
+		Tier: tier, World: worldName(tier), HasSatellite: p.hasSatellite,
 	}
 
 	// Per-room win thresholds override the static catalog defaults.
