@@ -232,6 +232,7 @@ function renderTop(self, country) {
   setStat("stat-capital", fmt(self.capital));
   setStat("stat-nukes", `${self.nukes}/${app.state.catalog.nukeTarget}`);
   setStat("stat-rate", (country.exchangeRate || 0).toFixed(3));
+  setStat("stat-world", self.world || "—");
 }
 
 function renderBoard(board) {
@@ -353,7 +354,10 @@ function tradeOne(name, side) {
 }
 
 // ---- helpers ----
-function setStat(id, v) { document.querySelector(`#${id} span`).textContent = v; }
+function setStat(id, v) {
+  const el = document.querySelector(`#${id} span`);
+  if (el) el.textContent = v;
+}
 function setConn(text, ok) {
   const e = document.getElementById("conn");
   e.textContent = text; e.className = ok ? "ok" : "bad";
@@ -456,25 +460,32 @@ function openFactoryMenu() {
   const res = app.state.self.resources || {};
   const tier = app.state.self.tier || 0;
   const iconOf = (name) => (cat.resources.find((r) => r.name === name) || {}).icon || "";
-  const rows = cat.factories.map((f) => {
-    const tierOK = tier >= f.minTier;
-    const recipe = Object.entries(f.recipe)
-      .map(([r, n]) => `${n}×${iconOf(r)}${r}`).join(" + ");
-    const resOK = Object.entries(f.recipe).every(([r, n]) => (res[r] || 0) >= n);
-    const ok = tierOK && resOK;
-    const note = tierOK
-      ? `${recipe} · earns ~${Math.round(f.payout)}/cycle`
-      : `🔒 needs ${esc(f.minWorld)}`;
-    return `<div class="fac-row ${ok ? "" : "short"}">
-      <div class="fac-info">
-        <span class="fac-ttl">${f.icon} ${esc(f.title)}</span>
-        <span class="muted small">${note}</span>
-      </div>
-      <button class="btn small ${ok ? "primary" : ""}" data-fac="${f.key}" ${ok ? "" : "disabled"}>Build</button>
-    </div>`;
+  const sections = [
+    { tier: 0, name: "Third World" },
+    { tier: 1, name: "Second World" },
+    { tier: 2, name: "First World" },
+  ];
+  const html = sections.map((sec) => {
+    const locked = tier < sec.tier;
+    const rows = cat.factories.filter((f) => f.minTier === sec.tier).map((f) => {
+      // The recipe (needs) is always shown.
+      const recipe = Object.entries(f.recipe)
+        .map(([r, n]) => `${n}×${iconOf(r)}${r}`).join(" + ");
+      const resOK = Object.entries(f.recipe).every(([r, n]) => (res[r] || 0) >= n);
+      const ok = !locked && resOK;
+      return `<div class="fac-row ${ok ? "" : "short"}">
+        <div class="fac-info">
+          <span class="fac-ttl">${f.icon} ${esc(f.title)}</span>
+          <span class="muted small">${recipe} · ~${Math.round(f.payout)}/cycle</span>
+        </div>
+        <button class="btn small ${ok ? "primary" : ""}" data-fac="${f.key}" ${ok ? "" : "disabled"}>Build</button>
+      </div>`;
+    }).join("");
+    return `<div class="fac-section${locked ? " locked" : ""}">
+      <div class="fac-sec-h">${esc(sec.name)}${locked ? " 🔒" : ""}</div>${rows}</div>`;
   }).join("");
-  modal("Build a factory", `<div class="fac-list">${rows}</div>
-    <p class="muted small">Advanced factories unlock as your nation develops (Second / First World). Buy the resources first — the recipe is consumed when you build.</p>`,
+  modal("Build a factory", `<div class="fac-list">${html}</div>
+    <p class="muted small">Recipes are always shown; a section unlocks when your nation reaches that world level. Resources are consumed when you build.</p>`,
     () => false);
   document.querySelectorAll("#modal [data-fac]").forEach((b) => {
     b.onclick = () => {
