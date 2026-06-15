@@ -139,18 +139,19 @@ function buildPlaceable(svg, country, pl, own, palette) {
 }
 
 function attachPointer(g, svg, country, pl, own) {
-  let moved = false, startX = 0, startY = 0;
   g.addEventListener("pointerdown", (e) => {
     e.preventDefault();
-    g.setPointerCapture(e.pointerId);
-    moved = false;
+    let moved = false;
+    const startX = e.clientX, startY = e.clientY;
     interacting = true;
-    startX = e.clientX; startY = e.clientY;
 
+    // Listen on the document (not the element) and skip pointer capture — both
+    // are unreliable for touch on SVG in some mobile browsers. This way the drag
+    // tracks the finger no matter where it goes and always completes.
     const move = (ev) => {
-      if (!own) return;
       if (Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) > 4) {
-        moved = true; dragging = true;
+        moved = true;
+        if (own) dragging = true;
       }
       if (!dragging) return;
       if (ev.cancelable) ev.preventDefault(); // stop the touch from scrolling the page
@@ -161,7 +162,9 @@ function attachPointer(g, svg, country, pl, own) {
       g.setAttribute("transform", `translate(${nx * W} ${ny * H})`);
     };
     const up = () => {
-      g.removeEventListener("pointermove", move);
+      document.removeEventListener("pointermove", move);
+      document.removeEventListener("pointerup", up);
+      document.removeEventListener("pointercancel", up);
       dragging = false;
       interacting = false;
       if (moved && own) {
@@ -171,8 +174,8 @@ function attachPointer(g, svg, country, pl, own) {
       }
       cfg.afterInteract && cfg.afterInteract();
     };
-    g.addEventListener("pointermove", move);
-    g.addEventListener("pointerup", up, { once: true });
-    g.addEventListener("pointercancel", () => { dragging = false; interacting = false; cfg.afterInteract && cfg.afterInteract(); }, { once: true });
+    document.addEventListener("pointermove", move, { passive: false });
+    document.addEventListener("pointerup", up);
+    document.addEventListener("pointercancel", up);
   });
 }

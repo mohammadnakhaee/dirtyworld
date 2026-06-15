@@ -3,6 +3,10 @@ services:
     build: .
     expose:
       - "8080" # internal only; nginx reaches it over the compose network
+    volumes:
+      # Serve the latest web assets (CSS/JS/templates) without rebuilding the
+      # image; CSS/JS are live on refresh, template changes need an app restart.
+      - ./web:/app/web:ro
     restart: unless-stopped
 
   nginx:

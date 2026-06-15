@@ -139,7 +139,9 @@ body.game { height: 100vh; display: flex; flex-direction: column; overflow: hidd
   border: 1px solid var(--c, var(--border)); background: rgba(255,255,255,.04); color: var(--text);
 }
 .tab.active { background: var(--c); color: #0a0f1f; }
-#map { flex: 1; width: 100%; min-height: 0; }
+/* touch-action:none on the SVG container is the reliable place (some browsers
+   ignore it on SVG child elements), so touch drags don't turn into scrolls. */
+#map { flex: 1; width: 100%; min-height: 0; touch-action: none; }
 .map-hint { color: var(--muted); font-size: 12px; text-align: center; padding-top: 4px; }
 
 /* touch-action:none lets a touch drag/tap a building run as a pointer gesture
