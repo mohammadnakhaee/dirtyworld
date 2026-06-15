@@ -92,6 +92,7 @@ type Player struct {
 	Confidence  float64        // C_i, ~0.6..1.4, decays toward 1.0
 	PrevCapital float64        // for momentum M_i
 	SpyAccess   map[string]int // targetID -> tick the access expires
+	dcTick      int            // tick when the last connection dropped (while offline)
 }
 
 // nukeCount is the number of surviving nuclear weapons. Each nuke is a placeable

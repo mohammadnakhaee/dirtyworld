@@ -51,13 +51,10 @@ func (r *Room) Run() {
 }
 
 func (r *Room) tick() {
-	if r.over {
-		return
-	}
 	r.Tick++
 	// The economy only runs once the host has started the match; before that
 	// the room is a lobby and we just keep clients refreshed.
-	if r.Started {
+	if r.Started && !r.over {
 		r.applyFactories()
 		// Prices update on a slow cadence (every 30s); trades update them
 		// immediately in executeOrder.
@@ -67,7 +64,65 @@ func (r *Room) tick() {
 		r.recomputeCurrencies()
 		r.checkWin()
 	}
+	if r.gc() {
+		return // room was torn down
+	}
 	r.broadcastState(proto.EvtTick)
+}
+
+// GraceTicks is how long a seat (and the room) is held after a player's last
+// connection drops, so same-tab navigation (map <-> console) can reconnect
+// without losing the seat or dropping the room. 10 ticks ≈ 5s.
+const GraceTicks = 10
+
+// gc holds disconnected seats for a grace window, then drops lobby leavers and
+// tears the room down once everyone is gone. Returns true if the room shut down.
+func (r *Room) gc() bool {
+	for _, id := range append([]string{}, r.order...) {
+		p := r.Players[id]
+		if p == nil || p.connected() || r.Tick-p.dcTick < GraceTicks {
+			continue
+		}
+		if r.Started {
+			continue // started game: hold the seat for a later rejoin by name
+		}
+		r.dropPlayer(p)
+	}
+	if r.connectedCount() == 0 && r.graceElapsed() {
+		r.shutdown()
+		return true
+	}
+	return false
+}
+
+// graceElapsed reports whether enough time has passed since the most recent
+// disconnect to safely tear the room down.
+func (r *Room) graceElapsed() bool {
+	newest := -1 << 30
+	for _, p := range r.Players {
+		if p.dcTick > newest {
+			newest = p.dcTick
+		}
+	}
+	return len(r.Players) == 0 || r.Tick-newest >= GraceTicks
+}
+
+// dropPlayer removes a player from the lobby and reassigns the host if needed.
+func (r *Room) dropPlayer(p *Player) {
+	delete(r.Players, p.ID)
+	for i, id := range r.order {
+		if id == p.ID {
+			r.order = append(r.order[:i], r.order[i+1:]...)
+			break
+		}
+	}
+	if r.HostID == p.ID {
+		r.HostID = ""
+		if len(r.order) > 0 {
+			r.HostID = r.order[0]
+		}
+	}
+	r.systemNews(p.Country.Name + " has left the lobby.")
 }
 
 // ---- player lifecycle ----
@@ -175,38 +230,9 @@ func (r *Room) removePlayer(c Conn) {
 	if p.connected() {
 		return // this player still has another view open
 	}
-
-	if r.Started {
-		// Keep the player's state so they can rejoin by country name. Only tear
-		// the room down once nobody is connected anymore.
-		r.systemNews(p.Country.Name + " has lost connection — their seat is held.")
-		if r.connectedCount() == 0 {
-			r.shutdown()
-			return
-		}
-		r.broadcastState(proto.EvtTick)
-		return
-	}
-
-	// Pre-game lobby: a leaver is simply dropped.
-	delete(r.Players, p.ID)
-	for i, id := range r.order {
-		if id == p.ID {
-			r.order = append(r.order[:i], r.order[i+1:]...)
-			break
-		}
-	}
-	if r.HostID == p.ID { // hand the lobby to whoever remains
-		r.HostID = ""
-		if len(r.order) > 0 {
-			r.HostID = r.order[0]
-		}
-	}
-	r.systemNews(p.Country.Name + " has left the lobby.")
-	if len(r.Players) == 0 {
-		r.shutdown()
-		return
-	}
+	// Last view closed. Don't remove the seat or shut the room down yet — a grace
+	// window (see gc) lets same-tab navigation reconnect without dropping out.
+	p.dcTick = r.Tick
 	r.broadcastState(proto.EvtTick)
 }
 
