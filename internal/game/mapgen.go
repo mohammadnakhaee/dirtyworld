@@ -53,7 +53,7 @@ func boundaryPoints(rng *rand.Rand, n int) [][2]float64 {
 
 const (
 	placeMinDist = 0.085 // minimum distance between building centers (normalized)
-	placeMargin  = 0.05  // keep buildings off the very edge of the map
+	placeMargin  = 0.085 // keep buildings off the very edge of the map
 )
 
 // resolvePlacement nudges (x, y) to the nearest spot that doesn't overlap any
@@ -79,8 +79,11 @@ func resolvePlacement(pls map[string]*Placeable, excludeID string, x, y float64)
 	if clear(x, y) {
 		return x, y
 	}
-	for radius := placeMinDist; radius <= 0.85; radius += placeMinDist * 0.5 {
-		steps := 12 + int(radius*24)
+	// Spiral outward in fine steps with dense angular sampling so the first free
+	// spot sits as close to placeMinDist from its neighbours as possible (a
+	// coarse search overshoots and leaves buildings too spread out).
+	for radius := placeMinDist; radius <= 0.9; radius += placeMinDist * 0.15 {
+		steps := int(2*math.Pi*radius/(placeMinDist*0.25)) + 8
 		for i := 0; i < steps; i++ {
 			ang := 2 * math.Pi * float64(i) / float64(steps)
 			cx := clamp(x+radius*math.Cos(ang), placeMargin, 1-placeMargin)
