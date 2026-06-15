@@ -153,6 +153,7 @@ function attachPointer(g, svg, country, pl, own) {
         moved = true; dragging = true;
       }
       if (!dragging) return;
+      if (ev.cancelable) ev.preventDefault(); // stop the touch from scrolling the page
       const rect = svg.getBoundingClientRect();
       const nx = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
       const ny = Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));

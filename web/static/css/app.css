@@ -142,7 +142,9 @@ body.game { height: 100vh; display: flex; flex-direction: column; overflow: hidd
 #map { flex: 1; width: 100%; min-height: 0; }
 .map-hint { color: var(--muted); font-size: 12px; text-align: center; padding-top: 4px; }
 
-.placeable { cursor: pointer; }
+/* touch-action:none lets a touch drag/tap a building run as a pointer gesture
+   instead of being hijacked into a page scroll (which would revert the drag). */
+.placeable { cursor: pointer; touch-action: none; }
 .placeable.own { cursor: grab; }
 .placeable.enemy { cursor: crosshair; }
 .placeable .icon { user-select: none; }
