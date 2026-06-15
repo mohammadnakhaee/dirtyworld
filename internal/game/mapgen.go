@@ -51,6 +51,48 @@ func boundaryPoints(rng *rand.Rand, n int) [][2]float64 {
 	return pts
 }
 
+const (
+	placeMinDist = 0.12 // minimum distance between building centers (normalized)
+	placeMargin  = 0.06 // keep buildings off the very edge of the map
+)
+
+// resolvePlacement nudges (x, y) to the nearest spot that doesn't overlap any
+// other building (excludeID is the one being moved, "" for a brand-new build),
+// staying within the map bounds. It spirals outward from the desired point so
+// the first free spot found is approximately the nearest.
+func resolvePlacement(pls map[string]*Placeable, excludeID string, x, y float64) (float64, float64) {
+	x = clamp(x, placeMargin, 1-placeMargin)
+	y = clamp(y, placeMargin, 1-placeMargin)
+
+	clear := func(cx, cy float64) bool {
+		for id, o := range pls {
+			if id == excludeID {
+				continue
+			}
+			dx, dy := cx-o.X, cy-o.Y
+			if dx*dx+dy*dy < placeMinDist*placeMinDist {
+				return false
+			}
+		}
+		return true
+	}
+	if clear(x, y) {
+		return x, y
+	}
+	for radius := placeMinDist; radius <= 0.85; radius += placeMinDist * 0.5 {
+		steps := 12 + int(radius*24)
+		for i := 0; i < steps; i++ {
+			ang := 2 * math.Pi * float64(i) / float64(steps)
+			cx := clamp(x+radius*math.Cos(ang), placeMargin, 1-placeMargin)
+			cy := clamp(y+radius*math.Sin(ang), placeMargin, 1-placeMargin)
+			if clear(cx, cy) {
+				return cx, cy
+			}
+		}
+	}
+	return x, y // crowded map: give up and keep the requested spot
+}
+
 // newPlaceable builds a cash-funded service (military or news agency).
 func newPlaceable(id, kind, subtype string) *Placeable {
 	switch PlaceableKind(kind) {

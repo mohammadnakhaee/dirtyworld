@@ -359,8 +359,8 @@ func (r *Room) movePlaceable(p *Player, m proto.PlaceableMove) {
 	if !ok {
 		return
 	}
-	pl.X = clamp(m.X, 0, 1)
-	pl.Y = clamp(m.Y, 0, 1)
+	// Snap to the nearest non-overlapping spot so buildings don't cover each other.
+	pl.X, pl.Y = resolvePlacement(p.Country.Placeables, pl.ID, clamp(m.X, 0, 1), clamp(m.Y, 0, 1))
 	r.sendState(p, proto.EvtMapUpdate)
 }
 
@@ -383,9 +383,7 @@ func (r *Room) buyService(p *Player, m proto.BuyService) {
 	p.Cash -= cost
 	id := string(m.Kind[:3]) + "-" + newID()[:4]
 	pl := newPlaceable(id, m.Kind, m.Subtype)
-	// Place near the centre with a small offset so it doesn't fully overlap.
-	pl.X = 0.45 + float64(len(p.Country.Placeables)%4)*0.04
-	pl.Y = 0.45 + float64(len(p.Country.Placeables)%3)*0.05
+	pl.X, pl.Y = resolvePlacement(p.Country.Placeables, "", 0.45, 0.5)
 	p.Country.Placeables[id] = pl
 	r.notice(p, "built a new "+m.Kind+" for "+fmtMoney(cost)+" "+p.Country.Currency)
 	r.sendState(p, proto.EvtMapUpdate)

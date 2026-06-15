@@ -84,10 +84,10 @@ func (r *Room) buildFactory(p *Player, key string) {
 		p.Resources[res] -= n
 	}
 	id := "fac-" + key + "-" + newID()[:4]
+	gx, gy := resolvePlacement(p.Country.Placeables, "", 0.4, 0.45)
 	pl := &Placeable{
 		ID: id, Kind: KindFactory, Subtype: key, Icon: def.Icon,
-		X:  0.4 + float64(len(p.Country.Placeables)%4)*0.06,
-		Y:  0.4 + float64(len(p.Country.Placeables)%3)*0.07,
+		X: gx, Y: gy,
 		HP: 100, MaxHP: 100, Value: def.buildValue(), Payout: def.payout(),
 		Cooldown: def.Cycle, CooldownMax: def.Cycle,
 	}
@@ -113,10 +113,10 @@ func (r *Room) buildNuke(p *Player) {
 	// Each nuke is a placeable on the map — attackable, and only counted while
 	// it survives (a damaged one still counts; a destroyed one does not).
 	id := "nuke-" + newID()[:4]
+	gx, gy := resolvePlacement(p.Country.Placeables, "", 0.5, 0.62)
 	p.Country.Placeables[id] = &Placeable{
 		ID: id, Kind: KindNuke, Subtype: "nuke", Icon: "☢️",
-		X:  0.5 + float64(len(p.Country.Placeables)%5)*0.05,
-		Y:  0.62 + float64(len(p.Country.Placeables)%3)*0.06,
+		X: gx, Y: gy,
 		HP: 100, MaxHP: 100, Value: NukeValue,
 	}
 	r.notice(p, "assembled a nuclear weapon ("+itoa(p.nukeCount())+"/"+itoa(r.Cfg.NukeWin)+")")
