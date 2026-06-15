@@ -26,12 +26,7 @@ func GenerateCountry(seed int64, name, currency string) *Country {
 	}
 	c.Placeables["agency-1"] = &Placeable{
 		ID: "agency-1", Kind: KindNewsAgency, Subtype: "press", Icon: "newspaper",
-		X: 0.5, Y: 0.42, HP: 100, MaxHP: 100, Value: CostAgency,
-	}
-	c.Placeables["mil-1"] = &Placeable{
-		ID: "mil-1", Kind: KindMilitary, Subtype: "army", Icon: "shield",
-		X: 0.58, Y: 0.6, HP: 100, MaxHP: 100, Value: CostMilitary,
-		CooldownMax: 8,
+		X: 0.5, Y: 0.5, HP: 100, MaxHP: 100, Value: CostAgency,
 	}
 	return c
 }
