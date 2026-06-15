@@ -52,8 +52,8 @@ func boundaryPoints(rng *rand.Rand, n int) [][2]float64 {
 }
 
 const (
-	placeMinDist = 0.085 // minimum distance between building centers (normalized)
-	placeMargin  = 0.085 // keep buildings off the very edge of the map
+	placeMinDist = 0.055 // minimum distance between building centers (normalized)
+	placeMargin  = 0.05  // keep buildings off the very edge of the map
 )
 
 // resolvePlacement nudges (x, y) to the nearest spot that doesn't overlap any
