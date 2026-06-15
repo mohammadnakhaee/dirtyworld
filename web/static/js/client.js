@@ -263,16 +263,18 @@ function renderStock(resources, cat) {
   }).join("");
 }
 
-// renderGoals shows progress toward the two public win conditions.
+// renderGoals shows nuke progress (the only win condition) and the capital
+// thresholds that set your world tier.
 function renderGoals(self, cat) {
   if (!cat || !document.getElementById("goal-nukes")) return;
   const nf = Math.min(100, (self.nukes / cat.nukeTarget) * 100);
   document.getElementById("goal-nukes").textContent = `${self.nukes} / ${cat.nukeTarget}`;
   document.getElementById("nuke-bar").style.width = nf + "%";
-  const cf = Math.min(100, (self.capital / cat.capitalTarget) * 100);
-  document.getElementById("goal-capital").textContent =
-    `${fmt(self.capital)} / ${cat.capitalTarget.toLocaleString()}`;
-  document.getElementById("capital-bar").style.width = cf + "%";
+  const wi = document.getElementById("world-info");
+  if (wi) {
+    wi.textContent = `Capital ${fmt(self.capital)} — Second World ≥ ${fmt(cat.secondWorldAt)}, ` +
+      `First World ≥ ${fmt(cat.firstWorldAt)}`;
+  }
 }
 
 // ---- resource market: one figure per resource, with 1-unit buy/sell ----

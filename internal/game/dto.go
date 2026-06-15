@@ -95,8 +95,9 @@ type CatalogDTO struct {
 	NukeRecipe    map[string]int     `json:"nukeRecipe"`
 	NukeCash      float64            `json:"nukeCash"`
 	NukeTarget    int                `json:"nukeTarget"`
-	CapitalTarget float64            `json:"capitalTarget"`
-	Services      map[string]float64 `json:"services"` // general-unit service prices
+	SecondWorldAt float64            `json:"secondWorldAt"` // capital for Second World
+	FirstWorldAt  float64            `json:"firstWorldAt"`  // capital for First World
+	Services      map[string]float64 `json:"services"`      // general-unit service prices
 }
 
 // gameCatalog is static, built once at package init.
@@ -107,7 +108,8 @@ func buildCatalog() CatalogDTO {
 		NukeRecipe:    map[string]int{"oil": NukeOil, "uranium": NukeUranium},
 		NukeCash:      NukeCash,
 		NukeTarget:    NukeWinCount,
-		CapitalTarget: CapitalWinTarget,
+		SecondWorldAt: SecondWorldDefault,
+		FirstWorldAt:  FirstWorldDefault,
 		Services: map[string]float64{
 			"military":  CostMilitary,
 			"agency":    CostAgency,

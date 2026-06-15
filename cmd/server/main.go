@@ -74,7 +74,8 @@ func makeCreate(h *hub.Hub) http.HandlerFunc {
 		cfg := game.Config{
 			StartingCash:  parseFloat(r.FormValue("treasury")),
 			NukeWin:       int(parseFloat(r.FormValue("nukeWin"))),
-			CapitalTarget: parseFloat(r.FormValue("capitalTarget")),
+			SecondWorldAt: parseFloat(r.FormValue("secondWorldAt")),
+			FirstWorldAt:  parseFloat(r.FormValue("firstWorldAt")),
 		}
 		if _, err := h.CreateRoom(id.Room, cfg); err != nil {
 			render(w, "landing.html", landingData{Error: err.Error(), Room: id.Room})

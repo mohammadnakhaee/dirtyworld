@@ -211,7 +211,7 @@ func (r *Room) startGame(p *Player) {
 	}
 	r.Started = true
 	r.systemNews("The game has begun. First to " + itoa(r.Cfg.NukeWin) +
-		" nuclear weapons or " + fmtMoney(r.Cfg.CapitalTarget) + " capital wins.")
+		" nuclear weapons wins.")
 	r.broadcastState(proto.EvtTick)
 }
 
@@ -259,7 +259,7 @@ func (r *Room) playerByCountry(name string) *Player {
 
 // tierOf is a player's current world tier (by capital vs the win target).
 func (r *Room) tierOf(p *Player) int {
-	return worldTier(p.capital(r.Market), r.Cfg.CapitalTarget)
+	return worldTier(p.capital(r.Market), r.Cfg.SecondWorldAt, r.Cfg.FirstWorldAt)
 }
 
 // canSee reports whether viewer can see (and therefore attack) target — via
@@ -571,10 +571,11 @@ func (r *Room) buildStateFor(p *Player) StateMsg {
 		Tier: tier, World: worldName(tier), HasSatellite: p.hasSatellite,
 	}
 
-	// Per-room win thresholds override the static catalog defaults.
+	// Per-room settings override the static catalog defaults.
 	cat := gameCatalog
 	cat.NukeTarget = r.Cfg.NukeWin
-	cat.CapitalTarget = r.Cfg.CapitalTarget
+	cat.SecondWorldAt = r.Cfg.SecondWorldAt
+	cat.FirstWorldAt = r.Cfg.FirstWorldAt
 
 	return StateMsg{
 		Tick: r.Tick, Started: r.Started, Over: r.over, PlayerCount: len(r.Players),

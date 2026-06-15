@@ -34,8 +34,9 @@ type Conn interface {
 // package defaults via withDefaults).
 type Config struct {
 	StartingCash  float64 // initial treasury per player
-	NukeWin       int     // nuclear weapons needed to win
-	CapitalTarget float64 // total capital needed to win
+	NukeWin       int     // nuclear weapons needed to win (the only win condition)
+	SecondWorldAt float64 // capital to reach Second World
+	FirstWorldAt  float64 // capital to reach First World
 }
 
 func (c Config) withDefaults() Config {
@@ -45,8 +46,11 @@ func (c Config) withDefaults() Config {
 	if c.NukeWin <= 0 {
 		c.NukeWin = NukeWinCount
 	}
-	if c.CapitalTarget <= 0 {
-		c.CapitalTarget = CapitalWinTarget
+	if c.SecondWorldAt <= 0 {
+		c.SecondWorldAt = SecondWorldDefault
+	}
+	if c.FirstWorldAt <= c.SecondWorldAt {
+		c.FirstWorldAt = c.SecondWorldAt * 2
 	}
 	return c
 }

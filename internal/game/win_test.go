@@ -37,25 +37,24 @@ func TestNukeWin(t *testing.T) {
 	}
 }
 
-func TestCapitalWin(t *testing.T) {
+func TestCapitalDoesNotWin(t *testing.T) {
 	r := NewRoom("t", Config{})
 	p := newTestPlayer(r, "Veska")
 	newTestPlayer(r, "Tyros")
-	p.Cash = CapitalWinTarget + 1 // pure cash is capital
+	p.Cash = 1_000_000 // huge capital must NOT win — only nukes do
 	r.checkWin()
-	if !r.over || r.WinnerID != p.ID {
-		t.Fatalf("expected capital win for %s, over=%v winner=%s", p.ID, r.over, r.WinnerID)
+	if r.over {
+		t.Fatalf("capital should not win the game")
 	}
 }
 
-func TestNoWinBelowThresholds(t *testing.T) {
+func TestNoWinBelowNukeThreshold(t *testing.T) {
 	r := NewRoom("t", Config{})
 	p := newTestPlayer(r, "Veska")
 	giveNukes(p, NukeWinCount-1)
-	p.Cash = CapitalWinTarget - 1
 	r.checkWin()
 	if r.over {
-		t.Fatalf("did not expect a win: nukes=%d cash=%.0f", p.nukeCount(), p.Cash)
+		t.Fatalf("did not expect a win: nukes=%d", p.nukeCount())
 	}
 }
 
@@ -81,18 +80,18 @@ func TestDestroyedNukeNotCounted(t *testing.T) {
 }
 
 func TestWorldTier(t *testing.T) {
-	const target = 9000
+	const secondAt, firstAt = 5000, 10000
 	cases := []struct {
 		cap  float64
 		want int
 	}{
-		{0, TierThird}, {2999, TierThird},
-		{3000, TierSecond}, {5999, TierSecond},
-		{6000, TierFirst}, {12000, TierFirst},
+		{0, TierThird}, {4999, TierThird},
+		{5000, TierSecond}, {9999, TierSecond},
+		{10000, TierFirst}, {25000, TierFirst},
 	}
 	for _, c := range cases {
-		if got := worldTier(c.cap, target); got != c.want {
-			t.Fatalf("worldTier(%.0f, %d) = %d, want %d", c.cap, target, got, c.want)
+		if got := worldTier(c.cap, secondAt, firstAt); got != c.want {
+			t.Fatalf("worldTier(%.0f) = %d, want %d", c.cap, got, c.want)
 		}
 	}
 }
@@ -107,9 +106,9 @@ func TestStartingCapitalExcludesBuildings(t *testing.T) {
 }
 
 func TestSatelliteNoHang(t *testing.T) {
-	r := NewRoom("t", Config{CapitalTarget: 300})
+	r := NewRoom("t", Config{SecondWorldAt: 1000, FirstWorldAt: 2000})
 	p := newTestPlayer(r, "Aaa")
-	p.Cash = 5000 // capital 5000 >> 2/3*300 -> First World
+	p.Cash = 5000 // capital 5000 >= 2000 -> First World
 	r.buildSatellite(p)
 	if !p.hasSatellite {
 		t.Fatal("satellite not set")

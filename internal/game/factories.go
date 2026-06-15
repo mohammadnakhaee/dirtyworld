@@ -1,11 +1,13 @@
 package game
 
-// Win conditions (public rules; players choose which to pursue):
-//   - assemble NukeWinCount nuclear weapons, OR
-//   - reach CapitalWinTarget in total capital.
+// The only win condition is assembling NukeWinCount nuclear weapons. Capital no
+// longer wins — instead two capital thresholds set a nation's world tier.
 const (
-	NukeWinCount     = 5
-	CapitalWinTarget = 10_000.0
+	NukeWinCount = 5
+
+	// Default capital thresholds separating the world tiers.
+	SecondWorldDefault = 5_000.0  // Third -> Second
+	FirstWorldDefault  = 10_000.0 // Second -> First
 
 	// A nuclear weapon consumes resources + cash to assemble.
 	NukeOil     = 2
@@ -20,23 +22,20 @@ const (
 	factoryPayoutRate = 0.3
 )
 
-// World development tiers, by capital relative to the capital-to-win target:
+// World development tiers, by capital against two thresholds:
 //
-//	third  (0): < 1/3      second (1): 1/3..2/3      first (2): > 2/3
+//	third (0): < secondAt    second (1): secondAt..firstAt    first (2): >= firstAt
 const (
 	TierThird  = 0
 	TierSecond = 1
 	TierFirst  = 2
 )
 
-func worldTier(capital, target float64) int {
-	if target <= 0 {
-		return TierThird
-	}
+func worldTier(capital, secondAt, firstAt float64) int {
 	switch {
-	case capital >= target*2.0/3.0:
+	case capital >= firstAt:
 		return TierFirst
-	case capital >= target/3.0:
+	case capital >= secondAt:
 		return TierSecond
 	default:
 		return TierThird
