@@ -406,6 +406,10 @@ func (r *Room) repair(p *Player, id string) {
 	if !ok {
 		return
 	}
+	if pl.destroyed() {
+		r.errTo(p, errStr("it's destroyed — rebuild it instead"))
+		return
+	}
 	missing := pl.MaxHP - pl.HP
 	if missing <= 0 {
 		r.errTo(p, errStr("already at full health"))
@@ -448,8 +452,11 @@ func (r *Room) handleAttack(p *Player, m proto.Attack) {
 	if def != nil {
 		r.notice(def, res.AttackerName+" attacked your "+res.Subtype+
 			" — lost "+fmtMoney(res.CashLost)+" "+def.Country.Currency)
-		// If the agency was hit, lengthen its recovery cooldown.
-		if pl, ok := def.Country.Placeables[res.PlaceableID]; ok && pl.Kind == KindNewsAgency && !pl.destroyed() {
+		if res.Destroyed {
+			// A destroyed building/nuke is gone for good — remove it (can't repair).
+			delete(def.Country.Placeables, res.PlaceableID)
+		} else if pl, ok := def.Country.Placeables[res.PlaceableID]; ok && pl.Kind == KindNewsAgency {
+			// A damaged agency takes longer to recover.
 			pl.Cooldown = pl.CooldownMax + int((1-pl.healthFrac())*16)
 		}
 		r.sendCombat(def, res)
