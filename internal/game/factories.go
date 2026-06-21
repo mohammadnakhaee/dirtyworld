@@ -6,8 +6,8 @@ const (
 	NukeWinCount = 5
 
 	// Default capital thresholds separating the world tiers.
-	SecondWorldDefault = 5_000.0  // Third -> Second
-	FirstWorldDefault  = 10_000.0 // Second -> First
+	SecondWorldDefault = 3_000.0 // Third -> Second
+	FirstWorldDefault  = 8_000.0 // Second -> First
 
 	// A nuclear weapon consumes resources + cash to assemble.
 	NukeOil     = 2

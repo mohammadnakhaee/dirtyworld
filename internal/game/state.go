@@ -7,7 +7,7 @@ import "time"
 
 // Tunable starting conditions / balance — all in one place.
 const (
-	StartingCash    = 3_000.0 // some money, no resources, no factories
+	StartingCash    = 300.0 // some money, no resources, no factories
 	TickInterval    = 500 * time.Millisecond
 	NewsCost        = 0.0  // posting to your own agency is free
 	HackShock       = 0.25 // confidence drop inflicted on the victim
