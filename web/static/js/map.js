@@ -138,6 +138,27 @@ function buildPlaceable(svg, country, pl, own, palette) {
   return g;
 }
 
+// clientToNorm maps screen (client) coordinates to normalized 0..1 map
+// coordinates, accounting for the SVG viewBox scaling and letterboxing so a
+// dragged building tracks the cursor exactly regardless of the map's shape.
+function clientToNorm(svg, clientX, clientY) {
+  const ctm = svg.getScreenCTM();
+  if (ctm) {
+    const pt = svg.createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    const p = pt.matrixTransform(ctm.inverse());
+    return [
+      Math.max(0, Math.min(1, p.x / W)),
+      Math.max(0, Math.min(1, p.y / H)),
+    ];
+  }
+  const rect = svg.getBoundingClientRect(); // fallback
+  return [
+    Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)),
+    Math.max(0, Math.min(1, (clientY - rect.top) / rect.height)),
+  ];
+}
+
 function attachPointer(g, svg, country, pl, own) {
   g.addEventListener("pointerdown", (e) => {
     e.preventDefault();
@@ -155,9 +176,7 @@ function attachPointer(g, svg, country, pl, own) {
       }
       if (!dragging) return;
       if (ev.cancelable) ev.preventDefault(); // stop the touch from scrolling the page
-      const rect = svg.getBoundingClientRect();
-      const nx = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
-      const ny = Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
+      const [nx, ny] = clientToNorm(svg, ev.clientX, ev.clientY);
       pl.x = nx; pl.y = ny;
       g.setAttribute("transform", `translate(${nx * W} ${ny * H})`);
     };
