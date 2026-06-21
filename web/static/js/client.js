@@ -60,8 +60,8 @@ function dispatch(type, p) {
       pushToast(`${p.attacker} ${verb} ${p.defender}'s ${p.subtype} (-${p.cashLost})`, "warn");
       break;
     }
-    case "tell": tellFlare(); pushToast(p.message, "tell"); break;
-    case "notice": pushToast(p.text, "info"); break;
+    case "tell": tellFlare(); break;
+    case "notice": break; // informational notices are no longer shown as pop-ups
     case "error": pushToast(p.error, "error"); break;
     case "win": showWin(p); break;
     case "room.closed":
