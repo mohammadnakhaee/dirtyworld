@@ -112,8 +112,8 @@ body.game { height: 100vh; display: flex; flex-direction: column; overflow: hidd
 
 .layout {
   position: relative; z-index: 1; flex: 1 1 auto; min-height: 0;
-  display: grid; grid-template-columns: 1fr 380px; gap: 12px;
-  padding: 0 10px 10px;
+  display: grid; grid-template-columns: 1fr 380px; grid-template-rows: minmax(0, 1fr);
+  gap: 12px; padding: 0 10px 10px;
 }
 
 .layout.map-only { grid-template-columns: 1fr; }
